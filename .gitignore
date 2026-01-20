@@ -29,3 +29,6 @@ Thumbs.db
 # Output
 output/
 results/
+
+# Emoji images
+emojis/

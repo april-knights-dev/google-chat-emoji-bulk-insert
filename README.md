@@ -19,6 +19,38 @@ Slackからエクスポートした絵文字をGoogle Chatに一括登録する�
 | 形式 | PNG, JPG, GIF |
 | 命名規則 | 小文字英数字、ハイフン、アンダースコアのみ |
 
+## ディレクトリ構造
+
+```
+google-chat-emoji-bulk-insert/
+├── main.py
+├── requirements.txt
+├── credentials.json      # Google Cloud からダウンロード（要作成）
+├── emojis/               # ここに絵文字画像を配置（要作成）
+│   ├── party-parrot.gif
+│   ├── shipit.png
+│   ├── thumbsup.png
+│   └── ...
+└── src/
+    ├── auth.py
+    ├── validator.py
+    └── emoji_uploader.py
+```
+
+## 絵文字の配置
+
+1. プロジェクトルートに `emojis/` ディレクトリを作成
+2. Slackからエクスポートした絵文字画像を配置
+
+```bash
+mkdir emojis
+# Slackエクスポートした画像をコピー
+cp /path/to/slack-export/*.png emojis/
+cp /path/to/slack-export/*.gif emojis/
+```
+
+**ファイル名 = 絵文字名** になります。例：`party-parrot.gif` → `:party-parrot:`
+
 ## セットアップ
 
 ### 1. Google Cloud Console での設定
@@ -41,7 +73,8 @@ pip install -r requirements.txt
 ### 基本的な使い方
 
 ```bash
-python main.py /path/to/emoji/directory
+# emojis/ ディレクトリの絵文字をアップロード
+python main.py emojis/
 ```
 
 初回実行時にブラウザが開き、Googleアカウントでの認証を求められます。
@@ -50,22 +83,22 @@ python main.py /path/to/emoji/directory
 
 ```bash
 # ドライラン（バリデーションのみ、アップロードしない）
-python main.py /path/to/emojis --dry-run
+python main.py emojis/ --dry-run
 
 # カスタム認証ファイルの指定
-python main.py /path/to/emojis --credentials my-creds.json --token my-token.pickle
+python main.py emojis/ --credentials my-creds.json --token my-token.pickle
 
 # 既存の絵文字をスキップしない
-python main.py /path/to/emojis --no-skip-existing
+python main.py emojis/ --no-skip-existing
 
 # アップロード間隔の調整（秒）
-python main.py /path/to/emojis --delay 1.0
+python main.py emojis/ --delay 1.0
 ```
 
 ### 出力例
 
 ```
-Scanning directory: ./slack-emojis
+Scanning directory: emojis/
 Found 150 image files
 
 Validating emojis...
