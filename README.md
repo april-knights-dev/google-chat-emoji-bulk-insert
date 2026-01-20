@@ -1,0 +1,141 @@
+# Google Chat Emoji Bulk Uploader
+
+Slackからエクスポートした絵文字をGoogle Chatに一括登録するツール。
+
+## 機能
+
+- Slackエクスポートの絵文字画像を自動検出
+- Google Chat APIの制約に基づく自動バリデーション
+- 制約違反の絵文字はスキップしてログ出力
+- 有効な絵文字をすべて一括登録
+- 既存の絵文字はスキップ（オプション）
+
+## Google Chat 絵文字の制約
+
+| 項目 | 制約 |
+|------|------|
+| ファイルサイズ | 256KB以下 |
+| 寸法 | 64px〜500pxの正方形 |
+| 形式 | PNG, JPG, GIF |
+| 命名規則 | 小文字英数字、ハイフン、アンダースコアのみ |
+
+## セットアップ
+
+### 1. Google Cloud Console での設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
+2. プロジェクトを作成または選択
+3. 「APIとサービス」→「有効なAPIとサービス」で **Google Chat API** を有効化
+4. 「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuthクライアントID」を選択
+5. アプリケーションの種類: **デスクトップアプリ**
+6. 作成後、JSONをダウンロードして `credentials.json` として保存
+
+### 2. 依存関係のインストール
+
+```bash
+pip install -r requirements.txt
+```
+
+## 使い方
+
+### 基本的な使い方
+
+```bash
+python main.py /path/to/emoji/directory
+```
+
+初回実行時にブラウザが開き、Googleアカウントでの認証を求められます。
+
+### オプション
+
+```bash
+# ドライラン（バリデーションのみ、アップロードしない）
+python main.py /path/to/emojis --dry-run
+
+# カスタム認証ファイルの指定
+python main.py /path/to/emojis --credentials my-creds.json --token my-token.pickle
+
+# 既存の絵文字をスキップしない
+python main.py /path/to/emojis --no-skip-existing
+
+# アップロード間隔の調整（秒）
+python main.py /path/to/emojis --delay 1.0
+```
+
+### 出力例
+
+```
+Scanning directory: ./slack-emojis
+Found 150 image files
+
+Validating emojis...
+
+============================================================
+VALIDATION SUMMARY
+============================================================
+Total files: 150
+Valid:       142
+Invalid:     8
+
+--- SKIPPED (Invalid) ---
+  [NG] Party-Parrot: Invalid name 'Party-Parrot': only lowercase letters, numbers, hyphens, underscores allowed
+  [NG] huge_image: File too large: 320.5KB (max: 256KB)
+  [NG] tiny: Invalid dimension: 32px (must be 64-500px)
+============================================================
+
+Authenticating with Google...
+Checking existing emojis...
+Found 50 existing emojis
+
+Uploading 142 emojis...
+[1/142] SKIP (exists): thumbsup
+[2/142] Uploading: party-parrot... OK
+[3/142] Uploading: shipit... OK
+...
+
+============================================================
+UPLOAD SUMMARY
+============================================================
+Attempted: 140
+Success:   138
+Failed:    2
+
+--- FAILED UPLOADS ---
+  [FAILED] some-emoji: API error (409): Emoji already exists
+============================================================
+```
+
+## Slackからの絵文字エクスポート
+
+Slackの絵文字をエクスポートするには：
+
+1. Slack管理画面の「カスタム絵文字」ページにアクセス
+2. ブラウザの開発者ツールを使用してエクスポート、または
+3. サードパーティツール（slack-emoji-exporterなど）を使用
+
+## 注意事項
+
+- **OAuth 2.0認証必須**: サービスアカウントは使用できません
+- **権限**: 絵文字を登録するには、組織のGoogle Workspace管理者権限が必要な場合があります
+- **レート制限**: API呼び出しにはレート制限があります。`--delay` オプションで調整してください
+- **credentials.json はコミットしない**: `.gitignore` に含まれていますが、確認してください
+
+## トラブルシューティング
+
+### "Access denied" エラー
+
+- Google Workspaceの管理者に連絡して、Chat APIへのアクセス権限を確認してください
+
+### "Quota exceeded" エラー
+
+- `--delay` オプションの値を増やしてください
+- 時間をおいて再実行してください
+
+### 認証エラー
+
+- `token.pickle` を削除して再認証してください
+- credentials.json が正しいか確認してください
+
+## ライセンス
+
+MIT
