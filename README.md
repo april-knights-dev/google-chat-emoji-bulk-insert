@@ -9,6 +9,7 @@ Slackからエクスポートした絵文字をGoogle Chatに一括登録する�
 - 制約違反の絵文字はスキップしてログ出力
 - 有効な絵文字をすべて一括登録
 - 既存の絵文字はスキップ（オプション）
+- **エラーファイルの自動分類**: バリデーションエラー・アップロードエラーをカテゴリ別にフォルダ分け
 
 ## Google Chat 絵文字の制約
 
@@ -58,9 +59,14 @@ cp /path/to/slack-export/*.gif emojis/
 1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
 2. プロジェクトを作成または選択
 3. 「APIとサービス」→「有効なAPIとサービス」で **Google Chat API** を有効化
-4. 「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuthクライアントID」を選択
-5. アプリケーションの種類: **デスクトップアプリ**
-6. 作成後、JSONをダウンロードして `credentials.json` として保存
+4. 「APIとサービス」→「OAuth同意画面」を設定
+   - スコープに `https://www.googleapis.com/auth/chat.customemojis` を追加
+5. 「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuthクライアントID」を選択
+6. アプリケーションの種類: **デスクトップアプリ**
+7. 作成後、JSONをダウンロードして `credentials.json` として保存
+8. **Google Chat アプリの設定**（重要）
+   - Google Cloud Console → 「Google Chat API」→「構成」
+   - アプリ名、アバターURL、説明を入力（必須項目）
 
 ### 2. 依存関係のインストール
 
@@ -93,6 +99,27 @@ python main.py emojis/ --no-skip-existing
 
 # アップロード間隔の調整（秒）
 python main.py emojis/ --delay 1.0
+
+# エラーファイルをカテゴリ別にフォルダ分け
+python main.py emojis/ --organize-errors errors/
+```
+
+### エラーファイルの分類
+
+`--organize-errors` オプションを使うと、エラーファイルがカテゴリ別にフォルダ分けされます。
+
+```
+errors/
+├── invalid_dimension/     # サイズが64-500px範囲外
+├── invalid_format/        # PNG/JPEG/GIF以外の形式
+├── not_square/            # 正方形でない画像
+├── too_large/             # 256KB超過
+├── invalid_name/          # 無効な絵文字名
+└── upload_errors/         # アップロード時のAPIエラー
+    ├── invalid_payload/   # GIFエンコード問題
+    ├── reserved_name/     # 予約語・禁止ワード
+    ├── name_too_long/     # 名前が長すぎる
+    └── invalid_name_api/  # APIが拒否した無効な名前
 ```
 
 ### 出力例
@@ -152,8 +179,14 @@ Slackの絵文字をエクスポートするには：
 - **権限**: 絵文字を登録するには、組織のGoogle Workspace管理者権限が必要な場合があります
 - **レート制限**: API呼び出しにはレート制限があります。`--delay` オプションで調整してください
 - **credentials.json はコミットしない**: `.gitignore` に含まれていますが、確認してください
+- **Google Chat アプリの設定が必要**: Google Cloud ConsoleでChat APIを有効化した後、Chat アプリの設定（アバターURL、説明文）も必要です
 
 ## トラブルシューティング
+
+### "Google Chat app not found" エラー
+
+- Google Cloud Console で Chat API の「構成」を設定してください
+- アバターURL と説明 は必須項目です
 
 ### "Access denied" エラー
 
@@ -168,6 +201,19 @@ Slackの絵文字をエクスポートするには：
 
 - `token.pickle` を削除して再認証してください
 - credentials.json が正しいか確認してください
+
+### "Invalid payload" エラー（GIFファイル）
+
+- 一部のGIFファイルはGoogle Chat APIで処理できません
+- PNGに変換するか、GIFを再エンコードしてください
+
+### "Malformed custom emoji name" エラー
+
+- 絵文字名が以下の条件に違反しています：
+  - 小文字英数字、ハイフン、アンダースコアのみ使用可能
+  - 予約語（atom, biohazard, skip など）は使用不可
+  - 1文字の名前は使用不可
+  - 末尾に特殊文字の連続は不可
 
 ## ライセンス
 

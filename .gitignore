@@ -25,6 +25,7 @@ Thumbs.db
 
 # Logs
 *.log
+upload_log.txt
 
 # Output
 output/
@@ -32,3 +33,4 @@ results/
 
 # Emoji images
 emojis/
+errors/

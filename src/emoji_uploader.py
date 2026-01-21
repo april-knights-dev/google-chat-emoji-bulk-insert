@@ -71,13 +71,17 @@ class EmojiUploader:
                 image_data = self._encode_image(file_path)
                 mime_type = self._get_mime_type(file_path)
 
+                # Get filename with extension
+                filename = Path(file_path).name
+
+                # emojiName requires colons at start and end
+                emoji_name_with_colons = f':{emoji_name}:'
+
                 body = {
-                    'customEmoji': {
-                        'shortcode': emoji_name,
-                        'payload': {
-                            'fileContent': image_data,
-                            'mimeType': mime_type,
-                        }
+                    'emojiName': emoji_name_with_colons,
+                    'payload': {
+                        'fileContent': image_data,
+                        'filename': filename,
                     }
                 }
 
@@ -147,7 +151,11 @@ class EmojiUploader:
                 response = request.execute()
 
                 for emoji in response.get('customEmojis', []):
-                    existing.add(emoji.get('shortcode', ''))
+                    # Remove colons from emojiName for comparison
+                    name = emoji.get('emojiName', '')
+                    if name.startswith(':') and name.endswith(':'):
+                        name = name[1:-1]
+                    existing.add(name)
 
                 page_token = response.get('nextPageToken')
                 if not page_token:
